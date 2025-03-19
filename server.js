@@ -1609,6 +1609,7 @@ app.get('/episodio/:animeId/:numero', (req, res) => {
             e.capa_ep,
             e.alertanovoep,
             a.id AS anime_id,
+            a.capa AS anime_capa,
             a.titulo AS anime_titulo,
             a.genero AS anime_genero  -- Presumindo que os gêneros são armazenados como uma string separada por vírgulas
         FROM 
@@ -1638,6 +1639,7 @@ app.get('/episodio/:animeId/:numero', (req, res) => {
 
         res.status(200).json({
             anime: { 
+                capa: row.anime_capa,
                 animeid: row.anime_id,
                 titulo: row.anime_titulo, 
                 generos: generos
