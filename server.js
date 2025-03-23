@@ -2791,7 +2791,7 @@ app.get('/scrape/:site/:inicio', async (req, res) => {
         const scrapeFunction = sites[site];
         const data = await scrapeFunction(inicio);
 
-        res.send(data);
+        res.json(data);
     } catch (error) {
         console.error('Erro:', error);
         res.status(500).send('Ocorreu um erro ao tentar acessar os episódios.');
