@@ -2483,6 +2483,7 @@ const sites = {
     'animeq.blog': async (inicio) => {
         try {
             console.log('Chromium Path:', puppeteer.executablePath());
+            const chromePath = puppeteer.executablePath();
             const browser = await puppeteer.launch({
                 executablePath: chromePath, // Usa o caminho detectado
                 headless: true,
