@@ -19,7 +19,7 @@ const fetch = require('node-fetch');
 app.use(compression());
 app.use(bodyParser.json({ limit: '50mb' })); // Define o limite máximo para 50MB
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
-
+const chromePath = puppeteer.executablePath();
 // Configuração do CORS
 app.use(cors());
 
@@ -1609,7 +1609,7 @@ app.get('/episodio/:animeId/:numero', (req, res) => {
             e.capa_ep,
             e.alertanovoep,
             a.id AS anime_id,
-            a.capa AS anime_capa,
+            a.capa AS capa,
             a.titulo AS anime_titulo,
             a.genero AS anime_genero  -- Presumindo que os gêneros são armazenados como uma string separada por vírgulas
         FROM 
@@ -1639,8 +1639,8 @@ app.get('/episodio/:animeId/:numero', (req, res) => {
 
         res.status(200).json({
             anime: { 
-                capa: row.anime_capa,
                 animeid: row.anime_id,
+                capa: row.capa,
                 titulo: row.anime_titulo, 
                 generos: generos
             },
@@ -2328,6 +2328,7 @@ const sites = {
     'animesorionvip.net': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
+                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2392,6 +2393,7 @@ const sites = {
     'animesonline.fan': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
+                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2482,11 +2484,9 @@ const sites = {
      
     'animeq.blog': async (inicio) => {
         try {
-            console.log('Chromium Path:', puppeteer.executablePath());
-            const chromePath = puppeteer.executablePath();
             const browser = await puppeteer.launch({
-                executablePath: chromePath, // Usa o caminho detectado
-                headless: true,
+                executablePath: chromePath,
+                headless: false,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
             const page = await browser.newPage();
@@ -2614,6 +2614,7 @@ const sites = {
     'goyabu.to': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
+                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2684,6 +2685,7 @@ const sites = {
     'animesgames.cc': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
+                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2789,7 +2791,7 @@ app.get('/scrape/:site/:inicio', async (req, res) => {
         const scrapeFunction = sites[site];
         const data = await scrapeFunction(inicio);
 
-        res.json(data);
+        res.send(data);
     } catch (error) {
         console.error('Erro:', error);
         res.status(500).send('Ocorreu um erro ao tentar acessar os episódios.');
@@ -3053,6 +3055,7 @@ app.get('/buscarEpisodios', async (req, res) => {
     // Inicializa o Puppeteer
     // Inicializa o Puppeteer
     const browser = await puppeteer.launch({
+        executablePath: '/usr/bin/google-chrome',
         headless: true,
         args: [
             '--no-sandbox',
@@ -3645,7 +3648,15 @@ function excluirSuportesAntigos() {
 }
 
 
+cron.schedule('0 0 * * *', () => {
+    console.log('Atualizando estatísticas...');
+    updateStatistics();
+});
 
+cron.schedule('0 0 */30 * *', () => {
+    console.log('Executando limpeza de dados antigos...');
+    excluirSuportesAntigos();
+});
 
 /// Iniciar o servidor
 app.listen(PORT, () => {
