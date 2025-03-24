@@ -2327,7 +2327,9 @@ app.post('/enviarAviso', (req, res) => {
 const sites = {
     'animesorionvip.net': async (inicio) => {
         try {
+            const chromePath = puppeteer.executablePath();
             const browser = await puppeteer.launch({
+                executablePath: chromePath, // Usa o caminho detectado
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2391,7 +2393,9 @@ const sites = {
 
     'animesonline.fan': async (inicio) => {
         try {
+            const chromePath = puppeteer.executablePath();
             const browser = await puppeteer.launch({
+                executablePath: chromePath, // Usa o caminho detectado
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2614,7 +2618,9 @@ const sites = {
 
     'goyabu.to': async (inicio) => {
         try {
+            const chromePath = puppeteer.executablePath();
             const browser = await puppeteer.launch({
+                executablePath: chromePath, // Usa o caminho detectado
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -3050,18 +3056,12 @@ app.post('/adicionarEpisodio', (req, res) => {
 
 app.get('/buscarEpisodios', async (req, res) => {
     const resultados = [];
-
-    // Inicializa o Puppeteer
-    // Inicializa o Puppeteer
+    
+    const chromePath = puppeteer.executablePath();
     const browser = await puppeteer.launch({
+        executablePath: chromePath, // Usa o caminho detectado
         headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-web-security', // Adiciona essa linha
-            '--disable-features=IsolateOrigins,site-per-process', // Adiciona essa linha
-            '--enable-features=NetworkService,NetworkServiceInProcess' // Adiciona essa linha
-        ]
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const sites = [
         { url: 'https://animeq.blog/' }
