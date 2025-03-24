@@ -2335,7 +2335,7 @@ const sites = {
             });
             const page = await browser.newPage();
             const url = `https://animesorionvip.net/animes/${inicio}`;
-            await page.goto(url);
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
             // Aguarda a carga da div com id 'episodio_box'
             await page.waitForSelector('#episodio_box');
@@ -2401,7 +2401,7 @@ const sites = {
             });
             const page = await browser.newPage();
             const url = `https://animesonline.fan/${inicio}`;
-            await page.goto(url);
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
     
             // Aguarda a carga da div com a classe 'meio-conteudo'
             await page.waitForSelector('.meio-conteudo');
@@ -3056,7 +3056,7 @@ app.post('/adicionarEpisodio', (req, res) => {
 
 app.get('/buscarEpisodios', async (req, res) => {
     const resultados = [];
-    
+
     const chromePath = puppeteer.executablePath();
     const browser = await puppeteer.launch({
         executablePath: chromePath, // Usa o caminho detectado
