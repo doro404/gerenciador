@@ -14,7 +14,7 @@ const config = require('./config');
 const { vpsUrl } = require('./config');
 const compression = require('compression');
 const cron = require('node-cron');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const fetch = require('node-fetch');
 app.use(compression());
 app.use(bodyParser.json({ limit: '50mb' })); // Define o limite máximo para 50MB
@@ -2328,7 +2328,6 @@ const sites = {
     'animesorionvip.net': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
-                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2393,7 +2392,6 @@ const sites = {
     'animesonline.fan': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
-                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2485,7 +2483,6 @@ const sites = {
     'animeq.blog': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
-                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2614,7 +2611,6 @@ const sites = {
     'goyabu.to': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
-                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -2685,7 +2681,6 @@ const sites = {
     'animesgames.cc': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
-                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
@@ -3055,7 +3050,6 @@ app.get('/buscarEpisodios', async (req, res) => {
     // Inicializa o Puppeteer
     // Inicializa o Puppeteer
     const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/google-chrome',
         headless: true,
         args: [
             '--no-sandbox',
