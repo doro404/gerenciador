@@ -2482,8 +2482,10 @@ const sites = {
      
     'animeq.blog': async (inicio) => {
         try {
+            console.log('Chromium Path:', puppeteer.executablePath());
             const browser = await puppeteer.launch({
-                headless: new,
+                executablePath: chromePath, // Usa o caminho detectado
+                headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
             const page = await browser.newPage();
