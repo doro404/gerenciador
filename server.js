@@ -2491,7 +2491,7 @@ const sites = {
             });
             const page = await browser.newPage();
             const url = `https://animeq.blog/${inicio}`;
-            await page.goto(url);
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
             // Aguarda a carga da div com a classe 'ListaContainer'
             await page.waitForSelector('.ListaContainer');
