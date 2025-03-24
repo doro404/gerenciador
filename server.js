@@ -1750,8 +1750,8 @@ app.get('/pesquisa/termo', (req, res) => {
 
         // 🚀 Converter 'genero' para 'generos' como um array
         animes.forEach(anime => {
-            anime.generos = anime.genero ? anime.genero.split(',').map(genero => genero.trim()) : []; // Converte para array
-            delete anime.genero; // Remove o campo antigo 'genero'
+            anime.generos = anime.genero ? anime.genero.split(',').map(genero => genero.trim()) : [];
+            anime.genero = anime.generos.join(', '); // Mantém compatibilidade
         });
 
         // Ordenar os episódios de cada anime em ordem crescente pelo número do episódio
