@@ -2483,6 +2483,7 @@ const sites = {
     'animeq.blog': async (inicio) => {
         try {
             const browser = await puppeteer.launch({
+                executablePath: '/usr/bin/google-chrome',
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
