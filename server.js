@@ -2512,7 +2512,7 @@ const sites = {
 
             const processEpisode = async ({ link, episodio }) => {
                 const episodePage = await browser.newPage();
-                await episodePage.goto(link);
+                await episodePage.goto(link, {waitUntil: "domcontentloaded"});
             
 
                 // Aguarda o carregamento do elemento com o ID 'preroll'
