@@ -3645,7 +3645,10 @@ function excluirSuportesAntigos() {
     });
 }
 
-
+cron.schedule('0 0 * * *', () => {
+    console.log('Executando atualização diária de estatísticas...');
+    updateStatistics();
+});
 
 
 /// Iniciar o servidor
