@@ -1516,8 +1516,8 @@ app.get('/generate-sitemap', (req, res) => {
                             priority: 0.8,
                             'image:image': [
                                 {
-                                    'image:loc': `${episode.capa}`,
-                                    'image:title': `Assistir ${episode.titulo}`
+                                    'image:loc': `${episode.capa_ep}`,
+                                    'image:title': `Assistir ${episode.nome}`
                                 }
                             ]
                         });
