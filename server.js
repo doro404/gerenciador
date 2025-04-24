@@ -7,7 +7,7 @@ const cors = require('cors'); // Importe o pacote cors
 const PORT = process.env.PORT || 3000;
 const path = require('path');
 const fs = require('fs');
-require('archiver');
+const archiver = require('archiver');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const { Builder } = require('xml2js');
