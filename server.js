@@ -1451,7 +1451,6 @@ app.get('/animes/status/:status', (req, res) => {
         });
     });
 }); ///rota pra receber status dos animes que estao em andamentos completos basicamente retorna os animes com base nos status deles
-const MAX_URLS_PER_SITEMAP = 50000; // Define o máximo de URLs por sitemap
 // Endpoint para gerar o sitemap
 app.get('/generate-sitemap', (req, res) => {
     const baseUrl = req.query.url;
@@ -1539,7 +1538,7 @@ app.get('/generate-sitemap', (req, res) => {
                 processedAnimes++;
 
                 if (processedAnimes === animeRows.length) {
-                    generateMultipleSitemaps(res, urls); // Chama a função para gerar múltiplos sitemaps
+                    generateMultipleSitemaps(res, urls, baseUrl); // Chama a função para gerar múltiplos sitemaps
                 }
             }
         });
@@ -1680,31 +1679,8 @@ app.get('/episodio/:animeId/:numero', (req, res) => {
         });
     });
 });
-// Função para gerar o sitemap
-function generateSitemap(res, urls) {
-    const builder = new Builder();
-    const sitemap = builder.buildObject({
-        urlset: {
-            $: {
-                xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
-                'xmlns:image': 'http://www.google.com/schemas/sitemap-image/1.1'
-            },
-            url: urls
-        }
-    });
 
-    const filePath = 'sitemap.xml';
-    fs.writeFileSync(filePath, sitemap);
-
-    res.download(filePath, 'sitemap.xml', (err) => {
-        if (err) {
-            console.error(err);
-        }
-        fs.unlinkSync(filePath); // Remove o arquivo após o download
-    });
-}
-
-function generateMultipleSitemaps(res, urls) {
+function generateMultipleSitemaps(res, urls, baseUrl) {
     const maxUrlsPerSitemap = 50000;
     const sitemapIndex = { sitemap: [] }; // Inicialize a propriedade sitemap
 
