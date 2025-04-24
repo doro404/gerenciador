@@ -1546,10 +1546,12 @@ const processAnimeEpisodes = (anime, type, baseUrl, urls) => {
                         changefreq: 'daily',
                         priority: 0.8,
                         lastmod: new Date().toISOString().split('T')[0],
-                        image: {
-                            loc: escapeXml(imageLoc),
-                            title: escapeXml(imageTitle)
-                        }
+                        'image:image': [
+                            {
+                                'image:loc': escapeXml(imageLoc),
+                                'image:title': escapeXml(imageTitle)
+                            }
+                        ]
                     });
                 });
 
