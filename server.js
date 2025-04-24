@@ -1458,62 +1458,84 @@ function generateMultipleSitemaps(res, urls, baseUrl) {
     const sitemapIndex = { sitemap: [] }; // Inicialize a propriedade sitemap
 
     const totalSitemaps = Math.ceil(urls.length / maxUrlsPerSitemap);
+    let errorOccurred = false;
 
     for (let i = 0; i < totalSitemaps; i++) {
         const sitemapUrls = urls.slice(i * maxUrlsPerSitemap, (i + 1) * maxUrlsPerSitemap);
 
-        const builder = new Builder();
-        const sitemap = builder.buildObject({
-            urlset: {
-                $: {
-                    xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
-                    'xmlns:image': 'http://www.google.com/schemas/sitemap-image/1.1'
-                },
-                url: sitemapUrls
-            }
-        });
+        try {
+            const builder = new Builder();
+            const sitemap = builder.buildObject({
+                urlset: {
+                    $: {
+                        xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
+                        'xmlns:image': 'http://www.google.com/schemas/sitemap-image/1.1'
+                    },
+                    url: sitemapUrls
+                }
+            });
 
-        const filePath = `sitemap-${i + 1}.xml`;
-        fs.writeFileSync(filePath, sitemap);
+            const filePath = `sitemap-${i + 1}.xml`;
+            fs.writeFileSync(filePath, sitemap);
 
-        // Adiciona o arquivo sitemap gerado ao índice
-        sitemapIndex.sitemap.push({ loc: `${baseUrl}/${filePath}` });
+            // Adiciona o arquivo sitemap gerado ao índice
+            sitemapIndex.sitemap.push({ loc: `${baseUrl}/${filePath}` });
 
-        // Envia o arquivo sitemap para o cliente
-        res.download(filePath, filePath, (err) => {
-            if (err) {
-                console.error(err);
-            } else {
-                fs.unlink(filePath, (err) => { // Remoção assíncrona
-                    if (err) console.error('Erro ao remover arquivo:', err);
-                });
-            }
-        });
+            // Envia o arquivo sitemap para o cliente
+            // Dentro do loop — remova res.download
+            fs.writeFileSync(filePath, sitemap);
+
+            // Após o loop, envie só o índice:
+            const indexFilePath = 'sitemap-index.xml';
+            fs.writeFileSync(indexFilePath, sitemapIndexXml);
+
+            res.download(indexFilePath, indexFilePath, (err) => {
+                if (err) {
+                    console.error('Erro ao enviar sitemap-index.xml:', err);
+                } else {
+                    console.log('Índice enviado com sucesso.');
+                }
+            });
+
+        } catch (err) {
+            console.error('Erro ao gerar o sitemap:', err);
+            errorOccurred = true;
+        }
     }
 
-    // Cria o arquivo do índice de sitemaps
-    const builder = new Builder();
-    const sitemapIndexXml = builder.buildObject({
-        sitemapindex: {
-            $: { xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9' },
-            sitemap: sitemapIndex.sitemap
-        }
-    });
-
-    const indexFilePath = 'sitemap-index.xml';
-    fs.writeFileSync(indexFilePath, sitemapIndexXml);
-
-    // Envia o arquivo do índice de sitemaps para o cliente
-    res.download(indexFilePath, indexFilePath, (err) => {
-        if (err) {
-            console.error(err);
-        } else {
-            fs.unlink(indexFilePath, (err) => { // Remoção assíncrona
-                if (err) console.error('Erro ao remover arquivo:', err);
+    if (!errorOccurred) {
+        // Cria o arquivo do índice de sitemaps
+        try {
+            const builder = new Builder();
+            const sitemapIndexXml = builder.buildObject({
+                sitemapindex: {
+                    $: { xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9' },
+                    sitemap: sitemapIndex.sitemap
+                }
             });
+
+            const indexFilePath = 'sitemap-index.xml';
+            fs.writeFileSync(indexFilePath, sitemapIndexXml);
+
+            // Envia o arquivo do índice de sitemaps para o cliente
+            res.download(indexFilePath, indexFilePath, (err) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    fs.unlink(indexFilePath, (err) => { // Remoção assíncrona
+                        if (err) console.error('Erro ao remover arquivo:', err);
+                    });
+                }
+            });
+        } catch (err) {
+            console.error('Erro ao gerar o índice de sitemaps:', err);
+            res.status(500).send('Erro ao gerar o índice de sitemaps.');
         }
-    });
+    } else {
+        res.status(500).send('Erro ao gerar o(s) sitemap(s).');
+    }
 }
+
 
 const escapeXml = (unsafe) => {
     return unsafe.replace(/[<>&'"]/g, (c) => {
@@ -1526,7 +1548,6 @@ const escapeXml = (unsafe) => {
         }
     });
 };
-
 const processAnimeEpisodes = (anime, type, baseUrl, urls) => {
     return new Promise((resolve, reject) => {
         db.all(
@@ -1534,7 +1555,9 @@ const processAnimeEpisodes = (anime, type, baseUrl, urls) => {
             [anime.id],
             (err, episodeRows) => {
                 if (err) {
+                    console.error('Erro na consulta SQL dos episódios:', err);
                     reject('Erro na consulta SQL dos episódios');
+                    return;
                 }
 
                 episodeRows.forEach(episode => {
@@ -1553,7 +1576,6 @@ const processAnimeEpisodes = (anime, type, baseUrl, urls) => {
                             }
                         ]
                     });
-                    
                 });
 
                 resolve(); // Resolve a Promise quando os episódios forem processados
