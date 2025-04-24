@@ -1553,6 +1553,7 @@ const processAnimeEpisodes = (anime, type, baseUrl, urls) => {
                             }
                         ]
                     });
+                    
                 });
 
                 resolve(); // Resolve a Promise quando os episódios forem processados
@@ -1598,15 +1599,18 @@ app.get('/generate-sitemap', (req, res) => {
         animeRows.forEach(anime => {
             // Adiciona URL do anime se o tipo for 'a' ou 't'
             if (type === 'a' || type === 't') {
+                const loc = `${baseUrl}/a?id=${anime.id}`;
+                const animeTITLE = `Assistir ${anime.titulo} Online`;
+                const image_link = anime.capa || '';
                 urls.push({
-                    loc: `${baseUrl}/a?id=${anime.id}`,
+                    loc: loc,
                     changefreq: 'daily',
                     priority: 0.8,
                     lastmod: new Date().toISOString().split('T')[0],
                     'image:image': [
                         {
-                            'image:loc': `${anime.capa}`,
-                            'image:title': `Assistir ${anime.titulo} Online`
+                            'image:loc': escapeXml(image_link),
+                            'image:title': escapeXml(animeTITLE)
                         }
                     ]
                 });
