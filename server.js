@@ -1489,8 +1489,9 @@ app.get('/generate-sitemap', (req, res) => {
             if (type === 'a' || type === 't') {
                 urls.push({
                     loc: `${baseUrl}/a?id=${anime.id}`,
-                    changefreq: 'weekly',
+                    changefreq: 'daily',
                     priority: 0.8,
+                    lastmod: new Date().toISOString().split('T')[0],
                     'image:image': [
                         {
                             'image:loc': `${anime.capa}`,
@@ -1512,8 +1513,9 @@ app.get('/generate-sitemap', (req, res) => {
                         // Adiciona URLs dos episódios
                         urls.push({
                             loc: `${baseUrl}/a?id=${anime.id}&ep=${episode.numero}`,
-                            changefreq: 'weekly',
+                            changefreq: 'daily',
                             priority: 0.8,
+                            lastmod: new Date().toISOString().split('T')[0],
                             'image:image': [
                                 {
                                     'image:loc': `${episode.capa_ep}`,
