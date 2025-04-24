@@ -1546,8 +1546,10 @@ const processAnimeEpisodes = (anime, type, baseUrl, urls) => {
 };
 
 app.get('/generate-sitemap', (req, res) => {
-    const baseUrl = req.query.url;
+    const baseUrl = decodeURIComponent(req.query.url);
     const type = req.query.type; // 'a' para animes, 'e' para episódios, 't' para ambos
+
+    console.log(baseUrl);
 
     if (!baseUrl) {
         return res.status(400).send('URL base é necessária como parâmetro.');
@@ -1607,7 +1609,14 @@ app.get('/generate-sitemap', (req, res) => {
                         console.error(`URL inválida no índice ${i}:`, u);
                     }
                 });
-                const urlsFiltradas = urls.filter(u => u.loc && typeof u.loc === 'string' && u.loc.startsWith('http'));
+                const urlsFiltradas = urls.filter(u =>
+                    u.loc &&
+                    typeof u.loc === 'string' &&
+                    u.loc.startsWith('http') &&
+                    !u.loc.includes('undefined') &&
+                    !u.loc.endsWith('.')
+                );
+                console.log(urlsFiltradas);
                 generateMultipleSitemaps(res, urlsFiltradas, baseUrl); // Chama a função para gerar múltiplos sitemaps depois de tudo estar pronto
             })
             .catch((err) => {
