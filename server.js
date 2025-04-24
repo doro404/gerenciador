@@ -1556,7 +1556,7 @@ const processAnimeEpisodes = (anime, type, baseUrl, urls) => {
                 }
 
                 episodeRows.forEach(episode => {
-                    const loc = `${baseUrl}/a?id=${anime.id}&ep=${episode.numero}`;
+                    const loc = `${baseUrl}/d?id=${anime.id}&ep=${episode.numero}`;
                     const imageLoc = episode.capa_ep || '';
                     const imageTitle = `Assistir ${episode.titulo_anime} ${episode.nome_episodio}`;
                     urls.push({
