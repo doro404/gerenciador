@@ -1452,6 +1452,18 @@ app.get('/animes/status/:status', (req, res) => {
     });
 }); ///rota pra receber status dos animes que estao em andamentos completos basicamente retorna os animes com base nos status deles
 // Endpoint para gerar o sitemap
+const escapeXml = (unsafe) => {
+    return unsafe.replace(/[<>&'"]/g, (c) => {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+        }
+    });
+};
+
 function generateMultipleSitemaps(res, urls, baseUrl) {
     const maxUrlsPerSitemap = 50000;
     const sitemapIndex = { sitemap: [] }; // Inicialize a propriedade sitemap
@@ -1525,17 +1537,18 @@ const processAnimeEpisodes = (anime, type, baseUrl, urls) => {
                 }
 
                 episodeRows.forEach(episode => {
+                    const loc = `${baseUrl}/a?id=${anime.id}&ep=${episode.numero}`;
+                    const imageLoc = episode.capa_ep || '';
+                    const imageTitle = `Assistir ${episode.title} ${episode.nome}`;
                     urls.push({
-                        loc: `${baseUrl}/a?id=${anime.id}&ep=${episode.numero}`,
+                        loc: escapeXml(loc),
                         changefreq: 'daily',
                         priority: 0.8,
                         lastmod: new Date().toISOString().split('T')[0],
-                        'image:image': [
-                            {
-                                'image:loc': `${episode.capa_ep}`,
-                                'image:title': `Assistir ${episode.titulo_anime} ${episode.nome_episodio}`
-                            }
-                        ]
+                        image: {
+                            loc: escapeXml(imageLoc),
+                            title: escapeXml(imageTitle)
+                        }
                     });
                 });
 
