@@ -1502,7 +1502,7 @@ app.get('/generate-sitemap', (req, res) => {
 
             if (type === 'e' || type === 't') {
                 // Consulta os episódios do anime
-                db.all("SELECT numero, capa, titulo FROM episodios WHERE anime_id = ?", [anime.id], (err, episodeRows) => {
+                db.all("SELECT numero, capa_ep, nome FROM episodios WHERE anime_id = ?", [anime.id], (err, episodeRows) => {
                     if (err) {
                         console.error(err);
                         return res.status(500).send('Erro ao consultar os episódios do banco de dados.');
