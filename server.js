@@ -1451,23 +1451,24 @@ app.get('/animes/status/:status', (req, res) => {
         });
     });
 }); ///rota pra receber status dos animes que estao em andamentos completos basicamente retorna os animes com base nos status deles
-
+const MAX_URLS_PER_SITEMAP = 50000; // Define o máximo de URLs por sitemap
+// Endpoint para gerar o sitemap
 app.get('/generate-sitemap', (req, res) => {
     const baseUrl = req.query.url;
-    const type = req.query.type; // 'animes', 'episodes', or 'both'
+    const type = req.query.type; // 'a' para animes, 'e' para episódios, 't' para ambos
 
     if (!baseUrl) {
         return res.status(400).send('URL base é necessária como parâmetro.');
     }
 
     if (!type || !['a', 'e', 't'].includes(type)) {
-        return res.status(400).send('Tipo inválido. Use "animes", "episodios" ou "both".');
+        return res.status(400).send('Tipo inválido. Use "a", "e" ou "t".');
     }
 
     const fixDIRETORY = [
         { loc: `${baseUrl}/`, changefreq: 'daily', priority: 1.0 },
         { loc: `${baseUrl}/t?pagina=1`, changefreq: 'weekly', priority: 0.8 },
-    ]
+    ];
 
     db.all("SELECT id, capa, titulo FROM animes", [], (err, animeRows) => {
         if (err) {
@@ -1485,7 +1486,7 @@ app.get('/generate-sitemap', (req, res) => {
         let processedAnimes = 0;
 
         animeRows.forEach(anime => {
-            // Adiciona URL do anime se o tipo for 'animes' ou 'both'
+            // Adiciona URL do anime se o tipo for 'a' ou 't'
             if (type === 'a' || type === 't') {
                 urls.push({
                     loc: `${baseUrl}/a?id=${anime.id}`,
@@ -1501,8 +1502,8 @@ app.get('/generate-sitemap', (req, res) => {
                 });
             }
 
+            // Adiciona URLs dos episódios se o tipo for 'e' ou 't'
             if (type === 'e' || type === 't') {
-                console.log('ID do Anime:', anime.id);  // Verifique o ID do anime
                 db.all(
                     "SELECT e.numero, e.capa_ep, e.nome AS nome_episodio, a.titulo AS titulo_anime FROM episodios e JOIN animes a ON e.anime_id = a.id WHERE e.anime_id = ?",
                     [anime.id],
@@ -1511,14 +1512,7 @@ app.get('/generate-sitemap', (req, res) => {
                             console.error('Erro na consulta SQL:', err);
                             return res.status(500).send('Erro ao consultar os episódios do banco de dados.');
                         }
-            
-                        console.log('episodeRows:', episodeRows); // Verifique se os episódios estão sendo retornados corretamente
-                        
-                        if (episodeRows.length === 0) {
-                            console.log('Nenhum episódio encontrado para o anime.');
-                            return;
-                        }
-            
+
                         episodeRows.forEach(episode => {
                             urls.push({
                                 loc: `${baseUrl}/a?id=${anime.id}&ep=${episode.numero}`,
@@ -1533,28 +1527,24 @@ app.get('/generate-sitemap', (req, res) => {
                                 ]
                             });
                         });
-            
+
                         processedAnimes++;
-                        console.log('Processed Animes:', processedAnimes);
-                        console.log('Total Anime Rows:', animeRows.length);
-            
+
                         if (processedAnimes === animeRows.length) {
-                            generateSitemap(res, urls);
+                            generateMultipleSitemaps(res, urls); // Chama a função para gerar múltiplos sitemaps
                         }
                     }
                 );
             } else {
                 processedAnimes++;
-                console.log('Processed Animes:', processedAnimes);
+
                 if (processedAnimes === animeRows.length) {
-                    generateSitemap(res, urls);
+                    generateMultipleSitemaps(res, urls); // Chama a função para gerar múltiplos sitemaps
                 }
             }
-            
         });
     });
 });
-
 app.get('/episodiosPagina/:id', (req, res) => {
     const animeId = req.params.id;
     const pagina = parseInt(req.query.pagina) || 1; // Página padrão é 1
@@ -1690,9 +1680,7 @@ app.get('/episodio/:animeId/:numero', (req, res) => {
         });
     });
 });
-
-
-
+// Função para gerar o sitemap
 function generateSitemap(res, urls) {
     const builder = new Builder();
     const sitemap = builder.buildObject({
@@ -1714,6 +1702,75 @@ function generateSitemap(res, urls) {
         }
         fs.unlinkSync(filePath); // Remove o arquivo após o download
     });
+}
+
+
+function generateMultipleSitemaps(res, allUrls) {
+    let sitemapCount = 0;
+    let startIndex = 0;
+
+    // Divide os URLs em partes
+    while (startIndex < allUrls.length) {
+        const urlsChunk = allUrls.slice(startIndex, startIndex + MAX_URLS_PER_SITEMAP);
+        const filePath = `sitemap${sitemapCount + 1}.xml`;
+
+        const builder = new Builder();
+        const sitemap = builder.buildObject({
+            urlset: {
+                $: {
+                    xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
+                    'xmlns:image': 'http://www.google.com/schemas/sitemap-image/1.1'
+                },
+                url: urlsChunk
+            }
+        });
+
+        fs.writeFileSync(filePath, sitemap);
+        startIndex += MAX_URLS_PER_SITEMAP;
+        sitemapCount++;
+    }
+
+    // Agora gera o sitemap index
+    const sitemapIndex = {
+        sitemapindex: {
+            $: {
+                xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
+            },
+            sitemap: []
+        }
+    };
+
+    // Adiciona os arquivos gerados no índice
+    for (let i = 0; i < sitemapCount; i++) {
+        sitemapIndex.sitemap.push({
+            loc: `http://example.com/sitemaps/sitemap${i + 1}.xml`, // Atualize com o caminho correto
+            lastmod: new Date().toISOString().split('T')[0]
+        });
+    }
+
+    // Cria o arquivo sitemap_index.xml
+    const indexFilePath = 'sitemap_index.xml';
+    const builder = new Builder();
+    const sitemapIndexXml = builder.buildObject(sitemapIndex);
+    fs.writeFileSync(indexFilePath, sitemapIndexXml);
+
+    // Faz o download dos sitemaps e do índice
+    res.download(indexFilePath, 'sitemap_index.xml', (err) => {
+        if (err) {
+            console.error(err);
+        }
+        fs.unlinkSync(indexFilePath); // Remove o índice após o download
+    });
+
+    for (let i = 0; i < sitemapCount; i++) {
+        const filePath = `sitemap${i + 1}.xml`;
+        res.download(filePath, `sitemap${i + 1}.xml`, (err) => {
+            if (err) {
+                console.error(err);
+            }
+            fs.unlinkSync(filePath); // Remove o arquivo após o download
+        });
+    }
 }
 
 app.get('/pesquisa/termo', (req, res) => {
