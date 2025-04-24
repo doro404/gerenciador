@@ -1464,7 +1464,12 @@ app.get('/generate-sitemap', (req, res) => {
         return res.status(400).send('Tipo inválido. Use "animes", "episodios" ou "both".');
     }
 
-    db.all("SELECT id FROM animes", [], (err, animeRows) => {
+    const fixDIRETORY = [
+        { loc: `${baseUrl}/`, changefreq: 'daily', priority: 1.0 },
+        { loc: `${baseUrl}/t?pagina=1`, changefreq: 'weekly', priority: 0.8 },
+    ]
+
+    db.all("SELECT id, capa, titulo FROM animes", [], (err, animeRows) => {
         if (err) {
             console.error(err);
             return res.status(500).send('Erro ao consultar o banco de dados.');
@@ -1475,6 +1480,8 @@ app.get('/generate-sitemap', (req, res) => {
         }
 
         const urls = [];
+        urls.push(...fixDIRETORY);
+
         let processedAnimes = 0;
 
         animeRows.forEach(anime => {
@@ -1483,13 +1490,19 @@ app.get('/generate-sitemap', (req, res) => {
                 urls.push({
                     loc: `${baseUrl}/a?id=${anime.id}`,
                     changefreq: 'weekly',
-                    priority: 0.8
+                    priority: 0.8,
+                    'image:image': [
+                        {
+                            'image:loc': `${anime.capa}`,
+                            'image:title': `Assistir ${anime.titulo} Online`
+                        }
+                    ]
                 });
             }
 
             if (type === 'e' || type === 't') {
                 // Consulta os episódios do anime
-                db.all("SELECT numero FROM episodios WHERE anime_id = ?", [anime.id], (err, episodeRows) => {
+                db.all("SELECT numero, capa, titulo FROM episodios WHERE anime_id = ?", [anime.id], (err, episodeRows) => {
                     if (err) {
                         console.error(err);
                         return res.status(500).send('Erro ao consultar os episódios do banco de dados.');
@@ -1500,7 +1513,13 @@ app.get('/generate-sitemap', (req, res) => {
                         urls.push({
                             loc: `${baseUrl}/a?id=${anime.id}&ep=${episode.numero}`,
                             changefreq: 'weekly',
-                            priority: 0.8
+                            priority: 0.8,
+                            'image:image': [
+                                {
+                                    'image:loc': `${episode.capa}`,
+                                    'image:title': `Assistir ${episode.titulo}`
+                                }
+                            ]
                         });
                     });
 
@@ -1662,7 +1681,8 @@ function generateSitemap(res, urls) {
     const sitemap = builder.buildObject({
         urlset: {
             $: {
-                xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
+                xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
+                'xmlns:image': 'http://www.google.com/schemas/sitemap-image/1.1'
             },
             url: urls
         }
