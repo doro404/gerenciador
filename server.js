@@ -7,6 +7,7 @@ const cors = require('cors'); // Importe o pacote cors
 const PORT = process.env.PORT || 3000;
 const path = require('path');
 const fs = require('fs');
+require('archiver');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const { Builder } = require('xml2js');
@@ -1455,15 +1456,14 @@ app.get('/animes/status/:status', (req, res) => {
 
 function generateMultipleSitemaps(res, urls, baseUrl) {
     const maxUrlsPerSitemap = 50000;
-    const sitemapIndex = { sitemap: [] }; // Inicialize a propriedade sitemap
-
+    const sitemapIndex = { sitemap: [] };
     const totalSitemaps = Math.ceil(urls.length / maxUrlsPerSitemap);
-    let errorOccurred = false;
+    const generatedFiles = [];
 
-    for (let i = 0; i < totalSitemaps; i++) {
-        const sitemapUrls = urls.slice(i * maxUrlsPerSitemap, (i + 1) * maxUrlsPerSitemap);
+    try {
+        for (let i = 0; i < totalSitemaps; i++) {
+            const sitemapUrls = urls.slice(i * maxUrlsPerSitemap, (i + 1) * maxUrlsPerSitemap);
 
-        try {
             const builder = new Builder();
             const sitemap = builder.buildObject({
                 urlset: {
@@ -1475,64 +1475,59 @@ function generateMultipleSitemaps(res, urls, baseUrl) {
                 }
             });
 
-            const filePath = `sitemap-${i + 1}.xml`;
-            fs.writeFileSync(filePath, sitemap);
+            const fileName = `sitemap-${i + 1}.xml`;
+            fs.writeFileSync(fileName, sitemap);
+            generatedFiles.push(fileName);
 
-            // Adiciona o arquivo sitemap gerado ao índice
-            sitemapIndex.sitemap.push({ loc: `${baseUrl}/${filePath}` });
-
-            // Envia o arquivo sitemap para o cliente
-            // Dentro do loop — remova res.download
-            fs.writeFileSync(filePath, sitemap);
-
-            // Após o loop, envie só o índice:
-            const indexFilePath = 'sitemap-index.xml';
-            fs.writeFileSync(indexFilePath, sitemapIndexXml);
-
-            res.download(indexFilePath, indexFilePath, (err) => {
-                if (err) {
-                    console.error('Erro ao enviar sitemap-index.xml:', err);
-                } else {
-                    console.log('Índice enviado com sucesso.');
-                }
-            });
-
-        } catch (err) {
-            console.error('Erro ao gerar o sitemap:', err);
-            errorOccurred = true;
+            sitemapIndex.sitemap.push({ loc: `${baseUrl}/${fileName}` });
         }
-    }
 
-    if (!errorOccurred) {
-        // Cria o arquivo do índice de sitemaps
-        try {
-            const builder = new Builder();
-            const sitemapIndexXml = builder.buildObject({
-                sitemapindex: {
-                    $: { xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9' },
-                    sitemap: sitemapIndex.sitemap
-                }
-            });
+        // Gera o sitemap-index.xml
+        const builder = new Builder();
+        const sitemapIndexXml = builder.buildObject({
+            sitemapindex: {
+                $: { xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9' },
+                sitemap: sitemapIndex.sitemap
+            }
+        });
 
-            const indexFilePath = 'sitemap-index.xml';
-            fs.writeFileSync(indexFilePath, sitemapIndexXml);
+        const indexFile = 'sitemap-index.xml';
+        fs.writeFileSync(indexFile, sitemapIndexXml);
+        generatedFiles.push(indexFile);
 
-            // Envia o arquivo do índice de sitemaps para o cliente
-            res.download(indexFilePath, indexFilePath, (err) => {
+        // Cria o arquivo ZIP
+        const zipFile = 'sitemaps.zip';
+        const output = fs.createWriteStream(zipFile);
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        output.on('close', () => {
+            res.download(zipFile, zipFile, (err) => {
                 if (err) {
-                    console.error(err);
+                    console.error('Erro ao enviar o arquivo ZIP:', err);
+                    res.status(500).send('Erro ao enviar o arquivo.');
                 } else {
-                    fs.unlink(indexFilePath, (err) => { // Remoção assíncrona
-                        if (err) console.error('Erro ao remover arquivo:', err);
+                    // Remove arquivos temporários
+                    [...generatedFiles, zipFile].forEach(file => {
+                        fs.unlink(file, err => {
+                            if (err) console.error(`Erro ao remover ${file}:`, err);
+                        });
                     });
                 }
             });
-        } catch (err) {
-            console.error('Erro ao gerar o índice de sitemaps:', err);
-            res.status(500).send('Erro ao gerar o índice de sitemaps.');
-        }
-    } else {
-        res.status(500).send('Erro ao gerar o(s) sitemap(s).');
+        });
+
+        archive.on('error', err => {
+            console.error('Erro ao criar o ZIP:', err);
+            res.status(500).send('Erro ao criar o arquivo ZIP.');
+        });
+
+        archive.pipe(output);
+        generatedFiles.forEach(file => archive.file(file, { name: file }));
+        archive.finalize();
+
+    } catch (err) {
+        console.error('Erro ao gerar sitemaps:', err);
+        res.status(500).send('Erro ao gerar os sitemaps.');
     }
 }
 
