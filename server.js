@@ -1704,15 +1704,14 @@ function generateSitemap(res, urls) {
     });
 }
 
+function generateMultipleSitemaps(res, urls) {
+    const maxUrlsPerSitemap = 50000;
+    const sitemapIndex = { sitemap: [] }; // Inicialize a propriedade sitemap
 
-function generateMultipleSitemaps(res, allUrls) {
-    let sitemapCount = 0;
-    let startIndex = 0;
+    const totalSitemaps = Math.ceil(urls.length / maxUrlsPerSitemap);
 
-    // Divide os URLs em partes
-    while (startIndex < allUrls.length) {
-        const urlsChunk = allUrls.slice(startIndex, startIndex + MAX_URLS_PER_SITEMAP);
-        const filePath = `sitemap${sitemapCount + 1}.xml`;
+    for (let i = 0; i < totalSitemaps; i++) {
+        const sitemapUrls = urls.slice(i * maxUrlsPerSitemap, (i + 1) * maxUrlsPerSitemap);
 
         const builder = new Builder();
         const sitemap = builder.buildObject({
@@ -1721,57 +1720,46 @@ function generateMultipleSitemaps(res, allUrls) {
                     xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
                     'xmlns:image': 'http://www.google.com/schemas/sitemap-image/1.1'
                 },
-                url: urlsChunk
+                url: sitemapUrls
             }
         });
 
+        const filePath = `sitemap-${i + 1}.xml`;
         fs.writeFileSync(filePath, sitemap);
-        startIndex += MAX_URLS_PER_SITEMAP;
-        sitemapCount++;
-    }
 
-    // Agora gera o sitemap index
-    const sitemapIndex = {
-        sitemapindex: {
-            $: {
-                xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
-            },
-            sitemap: []
-        }
-    };
+        // Adiciona o arquivo sitemap gerado ao índice
+        sitemapIndex.sitemap.push({ loc: `${baseUrl}/${filePath}` });
 
-    // Adiciona os arquivos gerados no índice
-    for (let i = 0; i < sitemapCount; i++) {
-        sitemapIndex.sitemap.push({
-            loc: `http://example.com/sitemaps/sitemap${i + 1}.xml`, // Atualize com o caminho correto
-            lastmod: new Date().toISOString().split('T')[0]
-        });
-    }
-
-    // Cria o arquivo sitemap_index.xml
-    const indexFilePath = 'sitemap_index.xml';
-    const builder = new Builder();
-    const sitemapIndexXml = builder.buildObject(sitemapIndex);
-    fs.writeFileSync(indexFilePath, sitemapIndexXml);
-
-    // Faz o download dos sitemaps e do índice
-    res.download(indexFilePath, 'sitemap_index.xml', (err) => {
-        if (err) {
-            console.error(err);
-        }
-        fs.unlinkSync(indexFilePath); // Remove o índice após o download
-    });
-
-    for (let i = 0; i < sitemapCount; i++) {
-        const filePath = `sitemap${i + 1}.xml`;
-        res.download(filePath, `sitemap${i + 1}.xml`, (err) => {
+        // Envia o arquivo sitemap para o cliente
+        res.download(filePath, filePath, (err) => {
             if (err) {
                 console.error(err);
             }
             fs.unlinkSync(filePath); // Remove o arquivo após o download
         });
     }
+
+    // Cria o arquivo do índice de sitemaps
+    const builder = new Builder();
+    const sitemapIndexXml = builder.buildObject({
+        sitemapindex: {
+            $: { xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9' },
+            sitemap: sitemapIndex.sitemap
+        }
+    });
+
+    const indexFilePath = 'sitemap-index.xml';
+    fs.writeFileSync(indexFilePath, sitemapIndexXml);
+
+    // Envia o arquivo do índice de sitemaps para o cliente
+    res.download(indexFilePath, indexFilePath, (err) => {
+        if (err) {
+            console.error(err);
+        }
+        fs.unlinkSync(indexFilePath); // Remove o arquivo após o download
+    });
 }
+
 
 app.get('/pesquisa/termo', (req, res) => {
     const searchTerm = req.query.term; // Parâmetro de consulta 'term' na URL
