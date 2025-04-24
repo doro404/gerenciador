@@ -1602,7 +1602,13 @@ app.get('/generate-sitemap', (req, res) => {
 
         Promise.all(promises)
             .then(() => {
-                generateMultipleSitemaps(res, urls, baseUrl); // Chama a função para gerar múltiplos sitemaps depois de tudo estar pronto
+                urls.forEach((u, i) => {
+                    if (!u.loc || typeof u.loc !== 'string' || !u.loc.startsWith('http')) {
+                        console.error(`URL inválida no índice ${i}:`, u);
+                    }
+                });
+                const urlsFiltradas = urls.filter(u => u.loc && typeof u.loc === 'string' && u.loc.startsWith('http'));
+                generateMultipleSitemaps(res, urlsFiltradas, baseUrl); // Chama a função para gerar múltiplos sitemaps depois de tudo estar pronto
             })
             .catch((err) => {
                 console.error(err);
@@ -1745,6 +1751,8 @@ app.get('/episodio/:animeId/:numero', (req, res) => {
         });
     });
 });
+
+
 
 app.get('/pesquisa/termo', (req, res) => {
     const searchTerm = req.query.term; // Parâmetro de consulta 'term' na URL
