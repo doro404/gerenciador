@@ -1503,33 +1503,33 @@ app.get('/generate-sitemap', (req, res) => {
 
             if (type === 'e' || type === 't') {
                 // Consulta os episódios do anime
-                db.all("SELECT numero, capa_ep, nome FROM episodios WHERE anime_id = ?", [anime.id], (err, episodeRows) => {
-                    if (err) {
-                        console.error(err);
-                        return res.status(500).send('Erro ao consultar os episódios do banco de dados.');
-                    }
+                db.all(
+                    "SELECT e.numero, e.capa_ep, e.nome AS nome_episodio, a.titulo AS titulo_anime FROM episodios e JOIN animes a ON e.anime_id = a.id WHERE e.anime_id = ?",
+                    [anime.id],
+                    (err, episodeRows) => {
+                        if (err) {
+                            console.error(err);
+                            return res.status(500).send('Erro ao consultar os episódios do banco de dados.');
+                        }
+            
+                        episodeRows.forEach(episode => {
+                            // Adiciona URLs dos episódios
+                            urls.push({
+                                loc: `${baseUrl}/a?id=${anime.id}&ep=${episode.numero}`,
+                                changefreq: 'daily',
+                                priority: 0.8,
+                                lastmod: new Date().toISOString().split('T')[0],
+                                'image:image': [
+                                    {
+                                        'image:loc': `${episode.capa_ep}`,
+                                        'image:title': `Assistir ${episode.titulo_anime} ${episode.nome_episodio}`
 
-                    episodeRows.forEach(episode => {
-                        // Adiciona URLs dos episódios
-                        urls.push({
-                            loc: `${baseUrl}/a?id=${anime.id}&ep=${episode.numero}`,
-                            changefreq: 'daily',
-                            priority: 0.8,
-                            lastmod: new Date().toISOString().split('T')[0],
-                            'image:image': [
-                                {
-                                    'image:loc': `${episode.capa_ep}`,
-                                    'image:title': `Assistir ${episode.nome}`
-                                }
-                            ]
+                                    }
+                                ]
+                            });
                         });
-                    });
-
-                    processedAnimes++;
-                    if (processedAnimes === animeRows.length) {
-                        generateSitemap(res, urls);
                     }
-                });
+                );
             } else {
                 processedAnimes++;
                 if (processedAnimes === animeRows.length) {
