@@ -1530,7 +1530,7 @@ app.get('/generate-sitemap', (req, res) => {
                         processedAnimes++;
 
                         if (processedAnimes === animeRows.length) {
-                            generateMultipleSitemaps(res, urls); // Chama a função para gerar múltiplos sitemaps
+                            generateMultipleSitemaps(res, urls, baseUrl); // Chama a função para gerar múltiplos sitemaps
                         }
                     }
                 );
